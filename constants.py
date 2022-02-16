@@ -1,0 +1,1 @@
+DB_NAME = 'sqlite:///movies.db?charset=utf-8'

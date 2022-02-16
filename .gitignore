@@ -1,0 +1,8 @@
+/.idea
+dao/__pycache__
+helpers/__pycache__
+views/__pycache__
+.DS_Store
+__pycache__
+create_data.py
+test_api.http
