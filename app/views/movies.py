@@ -1,8 +1,9 @@
 from flask import request
 from flask_restx import Namespace, Resource
 
-from models import Movie, MovieSchema
-from setup_db import db
+from app.container import movie_service
+from app.dao.models.movie import MovieSchema
+
 
 movie_ns = Namespace('movies')
 
@@ -40,21 +41,21 @@ class MoviesView(Resource):
         """
         director_id = request.args.get('director_id')
         genre_id = request.args.get('genre_id')
-        release_year = request.args.get('year')
+        year = request.args.get('year')
         # Фильтрация по режиссеру
         if director_id:
-            movies_with_director = db.session.query(Movie).filter(Movie.director_id == director_id)
+            movies_with_director = movie_service.get_all_on_director(director_id)
             return movies_schema.dump(movies_with_director), 200
         # Фильтрация только по жанру
         elif genre_id:
-            movies_with_genre = db.session.query(Movie).filter(Movie.genre_id == genre_id)
+            movies_with_genre = movie_service.get_all_on_genre(genre_id)
             return movies_schema.dump(movies_with_genre), 200
         # Фильтрация по году выпуска
-        elif release_year:
-            movies_by_year = db.session.query(Movie).filter(Movie.year == release_year)
+        elif year:
+            movies_by_year = movie_service.get_all_by_year(year)
             return movies_schema.dump(movies_by_year), 200
         # Без фильтрации
-        all_movies = Movie.query.all()
+        all_movies = movie_service.get_all()
         return movies_schema.dump(all_movies), 200
 
     def post(self) -> tuple:
@@ -64,10 +65,8 @@ class MoviesView(Resource):
         :return: Возвращает пустую строку и HTTP-код 201
         """
         json_data = request.json
-        new_movie = Movie(**json_data)
+        movie_service.create(json_data)
 
-        db.session.add(new_movie)
-        db.session.commit()
         return '', 201
 
 
@@ -88,8 +87,8 @@ class MovieView(Resource):
         :return: Сериализованные данные в формате JSON и HTTP-код 200.
         В случае, если id нет в базе данных - пустая строка и HTTP-код 404.
         """
-        movie = Movie.query.get(mid)
-        if not movie:
+        movie = movie_service.get_one(mid)
+        if movie is None:
             return '', 404
         return movie_schema.dump(movie), 200
 
@@ -102,22 +101,9 @@ class MovieView(Resource):
         Возвращает пустую строку и HTTP-код 204.
         В случае, если id нет в базе данных - пустая строка и HTTP-код 404.
         """
-        movie = Movie.query.get(mid)
-        if not movie:
-            return '', 404
-
         json_data = request.json
-        movie.id = json_data.get('id')
-        movie.title = json_data.get('title')
-        movie.description = json_data.get('description')
-        movie.trailer = json_data.get('trailer')
-        movie.year = json_data.get('year')
-        movie.rating = json_data.get('rating')
-        movie.genre_id = json_data.get('genre_id')
-        movie.director_id = json_data.get('director_id')
+        movie_service.update(mid, json_data)
 
-        db.session.add(movie)
-        db.session.commit()
         return '', 204
 
     def delete(self, mid: int) -> tuple:
@@ -127,10 +113,5 @@ class MovieView(Resource):
         :return: Возвращает пустую строку и HTTP-код 204.
         В случае, если id нет в базе данных - пустая строка и HTTP-код 404.
         """
-        movie = Movie.query.get(mid)
-        if not movie:
-            return '', 404
-
-        db.session.delete(movie)
-        db.session.commit()
+        movie_service.delete(mid)
         return '', 204

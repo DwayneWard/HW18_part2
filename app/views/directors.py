@@ -1,6 +1,7 @@
 from flask_restx import Namespace, Resource
 
-from models import Director, DirectorSchema
+from app.container import director_service
+from app.dao.models.director import DirectorSchema, Director
 
 director_ns = Namespace('directors')
 
@@ -20,7 +21,7 @@ class DirectorsView(Resource):
         Метод реализует отправку GET-запроса на /directors.
         :return: Сериализованные данные в формате JSON и HTTP-код 200.
         """
-        all_directors = Director.query.all()
+        all_directors = director_service.get_all()
         return directors_schema.dump(all_directors), 200
 
 
@@ -38,7 +39,7 @@ class DirectorView(Resource):
         :return: Сериализованные данные в формате JSON и HTTP-код 200.
         В случае, если id нет в базе данных - пустая строка и HTTP-код 404.
         """
-        director_by_id = Director.query.get(did)
-        if not director_by_id:
+        director_by_id = director_service.get_one(did)
+        if director_by_id is None:
             return '', 404
         return director_schema.dump(director_by_id), 200
