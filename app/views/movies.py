@@ -88,7 +88,8 @@ class MovieView(Resource):
         В случае, если id нет в базе данных - пустая строка и HTTP-код 404.
         """
         movie = movie_service.get_one(mid)
-
+        if movie is None:
+            return '', 404
         return movie_schema.dump(movie), 200
 
     def put(self, mid: int) -> tuple:
